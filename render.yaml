@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: drop-coach-api
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: .
+    healthCheckPath: /api/health
+    envVars:
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: OPENAI_MODEL
+        value: gpt-4.1-mini
+      - key: FRONTEND_ORIGIN
+        value: "*"
