@@ -11,6 +11,7 @@ const path = require("node:path");
 const fs = require("node:fs/promises");
 const { execFile } = require("node:child_process");
 const { promisify } = require("node:util");
+const crypto = require("node:crypto");
 
 const app = express();
 const execFileAsync = promisify(execFile);
@@ -29,6 +30,7 @@ const allowedOrigins = (process.env.FRONTEND_ORIGIN || "*")
   .filter(Boolean);
 
 app.disable("x-powered-by");
+app.set("trust proxy", 1);
 app.use(helmet({ crossOriginResourcePolicy: { policy: "cross-origin" } }));
 app.use(cors({
   origin(origin, callback) {
@@ -38,7 +40,7 @@ app.use(cors({
     return callback(new Error("This website origin is not allowed by the API."));
   },
   methods: ["GET", "POST", "OPTIONS"],
-  allowedHeaders: ["Content-Type"]
+  allowedHeaders: ["Content-Type", "Authorization"]
 }));
 app.use(express.json({ limit: "150kb" }));
 
@@ -69,6 +71,21 @@ const upload = multer({
     callback(null, true);
   }
 });
+
+function requireAccessToken(req, res, next) {
+  const expected = process.env.API_ACCESS_TOKEN;
+  const authorization = String(req.headers.authorization || "");
+  const supplied = authorization.startsWith("Bearer ") ? authorization.slice(7) : "";
+  if (!expected) {
+    return res.status(503).json({ error: "Backend access is not configured. Add API_ACCESS_TOKEN to the server environment." });
+  }
+  const expectedBuffer = Buffer.from(expected);
+  const suppliedBuffer = Buffer.from(supplied);
+  if (!supplied || expectedBuffer.length !== suppliedBuffer.length || !crypto.timingSafeEqual(expectedBuffer, suppliedBuffer)) {
+    return res.status(401).json({ error: "Backend access token is missing or incorrect." });
+  }
+  next();
+}
 
 function requireOpenAI(_req, res, next) {
   if (!openai) {
@@ -104,7 +121,7 @@ app.get("/api/health", (_req, res) => {
   });
 });
 
-app.post("/api/coach", coachLimit, requireOpenAI, async (req, res) => {
+app.post("/api/coach", coachLimit, requireAccessToken, requireOpenAI, async (req, res) => {
   const question = cleanText(req.body && req.body.question, 2000);
   const context = cleanText(req.body && req.body.context, 12000);
   if (!question) {
@@ -177,7 +194,7 @@ async function extractFrames(filePath, outputDirectory, duration) {
   return frames;
 }
 
-app.post("/api/analyze-clip", clipLimit, requireOpenAI, upload.single("video"), async (req, res) => {
+app.post("/api/analyze-clip", clipLimit, requireAccessToken, requireOpenAI, upload.single("video"), async (req, res) => {
   if (!req.file) {
     return res.status(400).json({ error: "Choose a video file to analyze." });
   }
