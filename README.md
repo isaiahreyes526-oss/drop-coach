@@ -39,7 +39,7 @@ The repository includes \`render.yaml\` and \`backend/Dockerfile\`. The Docker i
 3. Add \`OPENAI_API_KEY\` as a secret environment variable in Render.
 4. Set \`OPENAI_MODEL\` to a vision-capable model available to your API account (the default is \`gpt-4.1-mini\`).
 5. Set \`FRONTEND_ORIGIN\` to the exact origin of your published website. During initial testing, the Blueprint uses \`*\`; replace it before using the API publicly.
-6. Deploy, then open \`/api/health\` on the service URL. Copy that URL into the frontend's Backend API URL field.
+6. Deploy, then open \`/api/health\` on the service URL. Copy that URL into the frontend's Backend API URL field, and enter the same `API_ACCESS_TOKEN` in the Backend access token field.
 
 Do not put the OpenAI API key in \`index.html\`, browser JavaScript, or any GitHub file. Only store it in the backend environment.
 
