@@ -8,6 +8,8 @@ services:
     envVars:
       - key: OPENAI_API_KEY
         sync: false
+      - key: API_ACCESS_TOKEN
+        sync: false
       - key: OPENAI_MODEL
         value: gpt-4.1-mini
       - key: FRONTEND_ORIGIN
